@@ -1,6 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/user_model.dart';
 import '../models/subtitle_file.dart';
+import '../models/qc_log.dart';
 
 class SupabaseService {
   final SupabaseClient _client = Supabase.instance.client;
@@ -25,7 +26,7 @@ class SupabaseService {
     return _client
         .from('subtitle_files')
         .stream(primaryKey: ['id'])
-        .order('created_at')
+        .order('created_at', ascending: false)
         .map((data) => data.map((json) => SubtitleFile.fromJson(json)).toList());
   }
 
@@ -33,13 +34,51 @@ class SupabaseService {
     await _client.from('subtitle_files').update(updates).eq('id', id);
   }
 
-  // Realtime Subscriptions
-  void subscribeToUpdates(String table, Function(dynamic) onUpdate) {
-    _client.channel('public:$table').onPostgresChanges(
+  Future<void> insertSubtitleFile(Map<String, dynamic> newFile) async {
+    await _client.from('subtitle_files').insert(newFile);
+  }
+
+  // QC Logs
+  Stream<List<QCLog>> getQCLogsForFile(String subtitleFileId) {
+    return _client
+        .from('qc_logs')
+        .stream(primaryKey: ['id'])
+        .eq('subtitle_file_id', subtitleFileId)
+        .order('created_at', ascending: false)
+        .map((data) => data.map((json) => QCLog.fromJson(json)).toList());
+  }
+
+  Future<void> insertQCLog(Map<String, dynamic> newLog) async {
+    await _client.from('qc_logs').insert(newLog);
+  }
+
+  // Attendance
+  Stream<List<Attendance>> getAttendanceForUser(String userId) {
+    return _client
+        .from('attendance')
+        .stream(primaryKey: ['id'])
+        .eq('user_id', userId)
+        .order('date', ascending: false)
+        .map((data) => data.map((json) => Attendance.fromJson(json)).toList());
+  }
+
+  Future<void> upsertAttendance(Map<String, dynamic> attendanceData) async {
+    await _client.from('attendance').upsert(attendanceData, onConflict: 'user_id,date');
+  }
+
+  // Realtime Subscriptions (generic)
+  RealtimeChannel subscribeToTable(String table, Function(dynamic) onUpdate) {
+    final channel = _client.channel('public:$table');
+    channel.onPostgresChanges(
       event: PostgresChangeEvent.all,
       schema: 'public',
       table: table,
       callback: (payload) => onUpdate(payload),
     ).subscribe();
+    return channel;
+  }
+
+  Future<void> unsubscribeFromChannel(RealtimeChannel channel) async {
+    await channel.unsubscribe();
   }
 }

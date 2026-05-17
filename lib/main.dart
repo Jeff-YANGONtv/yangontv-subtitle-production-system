@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'themes/app_theme.dart';
 import 'core/router.dart';
+import 'providers/data_providers.dart'; // Import data providers
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
