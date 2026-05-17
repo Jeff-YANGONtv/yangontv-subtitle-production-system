@@ -9,6 +9,7 @@ import '../providers/auth_provider.dart';
 import '../providers/data_providers.dart';
 import '../themes/app_theme.dart';
 import '../widgets/stat_card.dart';
+import '../widgets/app_sidebar.dart';
 import '../utils/salary_calculator.dart';
 
 class EditorDashboardScreen extends ConsumerWidget {
@@ -23,13 +24,8 @@ class EditorDashboardScreen extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Editor Dashboard'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => ref.read(authNotifierProvider.notifier).logout(),
-          ),
-        ],
       ),
+      drawer: AppSidebar(user: user),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
