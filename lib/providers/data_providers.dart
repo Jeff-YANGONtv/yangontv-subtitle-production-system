@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/subtitle_file.dart';
 import '../models/qc_log.dart';
 import '../models/user_model.dart';
+import '../models/attendance.dart';
 import '../services/supabase_service.dart';
 import 'auth_provider.dart';
 
@@ -85,5 +86,9 @@ class SubtitleFileNotifier extends StateNotifier<AsyncValue<void>> {
     } catch (e, st) {
       state = AsyncValue.error(e, st);
     }
+  }
+
+  Future<void> upsertAttendance(Attendance attendance) async {
+    await updateAttendance(attendance);
   }
 }
