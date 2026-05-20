@@ -78,7 +78,7 @@ class SubtitleFileNotifier extends StateNotifier<AsyncValue<void>> {
     }
   }
 
-  Future<void> updateAttendance(Attendance attendance) async {
+  Future<void> upsertAttendance(Attendance attendance) async {
     state = const AsyncValue.loading();
     try {
       await _service.upsertAttendance(attendance.toJson());
