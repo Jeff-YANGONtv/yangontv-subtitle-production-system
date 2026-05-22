@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../models/user_model.dart';
+import '../models/subtitle_file.dart';
 import '../providers/auth_provider.dart';
 import '../providers/data_providers.dart';
 import '../themes/app_theme.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/app_sidebar.dart';
+import '../utils/salary_calculator.dart';
 
 class AdminDashboardScreen extends ConsumerWidget {
   final UserModel user;
@@ -31,9 +33,15 @@ class AdminDashboardScreen extends ConsumerWidget {
             subtitleFilesAsync.when(
               data: (files) {
                 final totalFiles = files.length;
-                final approvedFiles = files.where((f) => f.status == FileStatus.approved).length;
+                final approvedFiles = files.where((f) => f.status == FileStatus.approved).toList();
                 final pendingFiles = files.where((f) => f.status == FileStatus.pending).length;
-                final accuracy = totalFiles > 0 ? (approvedFiles / totalFiles * 100).toStringAsFixed(1) : '0';
+                final accuracy = totalFiles > 0 ? (approvedFiles.length / totalFiles * 100).toStringAsFixed(1) : '0';
+                
+                // Calculate monthly cost based on deductions
+                double totalMonthlyCost = 0;
+                // Simplified logic: sum of base salaries - sum of deductions
+                // In a real app, you'd fetch all users and their individual salaries
+                totalMonthlyCost = (approvedFiles.length * SalaryCalculator.fileValue);
 
                 return Column(
                   children: [
@@ -47,7 +55,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                         StatCard(title: 'Total Files', value: totalFiles.toString(), icon: Icons.file_copy, color: Colors.blue),
                         StatCard(title: 'Accuracy', value: '$accuracy%', icon: Icons.check_circle, color: AppTheme.primaryColor),
                         StatCard(title: 'QC Pending', value: pendingFiles.toString(), icon: Icons.pending_actions, color: Colors.orange),
-                        StatCard(title: 'Monthly Cost', value: '2.4M MMK', icon: Icons.payments, color: Colors.green),
+                        StatCard(title: 'Production Value', value: '${(totalMonthlyCost / 1000000).toStringAsFixed(1)}M MMK', icon: Icons.payments, color: Colors.green),
                       ],
                     ),
                     const SizedBox(height: 32),
@@ -55,34 +63,7 @@ class AdminDashboardScreen extends ConsumerWidget {
                     const SizedBox(height: 16),
                     SizedBox(
                       height: 200,
-                      child: LineChart(
-                        LineChartData(
-                          gridData: const FlGridData(show: false),
-                          titlesData: const FlTitlesData(show: false),
-                          borderData: FlBorderData(show: false),
-                          lineBarsData: [
-                            LineChartBarData(
-                              spots: const [
-                                FlSpot(0, 3),
-                                FlSpot(1, 1),
-                                FlSpot(2, 4),
-                                FlSpot(3, 2),
-                                FlSpot(4, 5),
-                                FlSpot(5, 3),
-                                FlSpot(6, 4),
-                              ],
-                              isCurved: true,
-                              color: AppTheme.primaryColor,
-                              barWidth: 4,
-                              dotData: const FlDotData(show: false),
-                              belowBarData: BarAreaData(
-                                show: true,
-                                color: AppTheme.primaryColor.withOpacity(0.1),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                      child: _buildProductivityChart(files),
                     ),
                   ],
                 );
@@ -92,6 +73,56 @@ class AdminDashboardScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildProductivityChart(List<SubtitleFile> files) {
+    // Group files by day for the last 7 days
+    final now = DateTime.now();
+    final last7Days = List.generate(7, (index) => now.subtract(Duration(days: 6 - index)));
+    
+    final spots = last7Days.asMap().entries.map((entry) {
+      final date = entry.value;
+      final count = files.where((f) => 
+        f.createdAt.day == date.day && 
+        f.createdAt.month == date.month && 
+        f.createdAt.year == date.year
+      ).length;
+      return FlSpot(entry.key.toDouble(), count.toDouble());
+    }).toList();
+
+    return LineChart(
+      LineChartData(
+        gridData: const FlGridData(show: false),
+        titlesData: FlTitlesData(
+          bottomTitles: AxisTitles(
+            sideTitles: SideTitles(
+              showTitles: true,
+              getTitlesWidget: (value, meta) {
+                final date = last7Days[value.toInt()];
+                return Text('${date.day}/${date.month}', style: const TextStyle(fontSize: 10));
+              },
+            ),
+          ),
+          leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 30)),
+          topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+          rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+        ),
+        borderData: FlBorderData(show: false),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            color: AppTheme.primaryColor,
+            barWidth: 4,
+            dotData: const FlDotData(show: true),
+            belowBarData: BarAreaData(
+              show: true,
+              color: AppTheme.primaryColor.withOpacity(0.1),
+            ),
+          ),
+        ],
       ),
     );
   }
