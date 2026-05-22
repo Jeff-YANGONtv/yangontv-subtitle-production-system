@@ -1,4 +1,4 @@
-package com.example.yangontv_subtitle_production_system
+package ygntv.subfiles.management
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -1,6 +1,6 @@
 {
-    "name": "yangontv_subtitle_production_system",
-    "short_name": "yangontv_subtitle_production_system",
+    "name": "ygntv_subtitle_production_system",
+    "short_name": "ygntv_subtitle_production_system",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",
